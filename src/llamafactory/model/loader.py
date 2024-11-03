@@ -11,7 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import importlib
+import inspect
+import json
+import os
+import pkgutil
 from typing import TYPE_CHECKING, Any, Dict, Optional, TypedDict
 
 import torch
@@ -42,6 +46,24 @@ class TokenizerModule(TypedDict):
     tokenizer: "PreTrainedTokenizer"
     processor: Optional["ProcessorMixin"]
 
+def iter_modules(package):
+    """递归遍历模块及其所有子模块"""
+    for importer, modname, ispkg in pkgutil.walk_packages(path=package.__path__, prefix=package.__name__ + '.'):
+        yield modname, ispkg
+
+def load_modules_and_classes(package_name, class_name=None):
+    """加载模块及其所有子模块，并根据类名动态加载类"""
+    package = importlib.import_module(package_name)
+    for modname, ispkg in iter_modules(package):
+        module = importlib.import_module(modname)
+        if class_name:
+            # 查找并加载指定的类
+            for name, obj in inspect.getmembers(module, inspect.isclass):
+                if name == class_name:
+                    loaded_class = getattr(module, class_name)
+                    print(f"Loaded class: {class_name} from module: {modname}")
+                    return loaded_class
+    return None
 
 def _get_init_kwargs(model_args: "ModelArguments") -> Dict[str, Any]:
     r"""
@@ -67,23 +89,30 @@ def load_tokenizer(model_args: "ModelArguments") -> "TokenizerModule":
     """
     init_kwargs = _get_init_kwargs(model_args)
     config = load_config(model_args)
-    try:
-        tokenizer = AutoTokenizer.from_pretrained(
-            model_args.model_name_or_path,
-            use_fast=model_args.use_fast_tokenizer,
-            split_special_tokens=model_args.split_special_tokens,
-            padding_side="right",
-            **init_kwargs,
-        )
-    except ValueError:  # try the fast one
-        tokenizer = AutoTokenizer.from_pretrained(
-            model_args.model_name_or_path,
-            use_fast=True,
-            padding_side="right",
-            **init_kwargs,
-        )
-    except Exception as e:
-        raise OSError("Failed to load tokenizer.") from e
+    if not model_args.train_from_scratch:
+        try:
+            tokenizer = AutoTokenizer.from_pretrained(
+                model_args.model_name_or_path,
+                use_fast=model_args.use_fast_tokenizer,
+                split_special_tokens=model_args.split_special_tokens,
+                padding_side="right",
+                **init_kwargs,
+            )
+        except ValueError:  # try the fast one
+            tokenizer = AutoTokenizer.from_pretrained(
+                model_args.model_name_or_path,
+                use_fast=True,
+                padding_side="right",
+                **init_kwargs,
+            )
+        except Exception as e:
+            raise OSError("Failed to load tokenizer.") from e
+    else:
+        dynamic_class=load_modules_and_classes('llamafactory.model',read_model_type_from_checkpoint(model_args.model_name_or_path)+"TokenizerFast")
+        if dynamic_class is not None:
+            tokenizer = dynamic_class.from_pretrained(model_args.model_name_or_path)
+        else:
+            return ValueError("model name {model_args.model_name_or_path} not found")
 
     if model_args.new_special_tokens is not None:
         num_added_tokens = tokenizer.add_special_tokens(
@@ -110,13 +139,53 @@ def load_tokenizer(model_args: "ModelArguments") -> "TokenizerModule":
 
     return {"tokenizer": tokenizer, "processor": processor}
 
+def read_model_type_from_checkpoint(checkpoint_path):
+    """
+    从模型的检查点中读取模型类型，并将类型的首字母大写。
+
+    参数:
+    checkpoint_path (str): 模型检查点的路径。
+
+    返回:
+    str: 模型类型的首字母大写。
+    """
+    # 确保检查点路径存在
+    if not os.path.exists(checkpoint_path):
+        raise ValueError(f"Checkpoint path {checkpoint_path} does not exist")
+
+    # 查找配置文件
+    config_file = os.path.join(checkpoint_path, "config.json")
+    if not os.path.isfile(config_file):
+        raise ValueError(f"Config file not found in {checkpoint_path}")
+
+    # 读取配置文件
+    with open(config_file, "r") as file:
+        config = json.load(file)
+
+    # 读取模型类型
+    model_type = config.get("model_type", "Unknown")
+
+    # 将模型类型的首字母大写
+    model_type_capitalized = model_type.capitalize()
+
+    return model_type_capitalized
+
+
 
 def load_config(model_args: "ModelArguments") -> "PretrainedConfig":
     r"""
     Loads model config.
     """
     init_kwargs = _get_init_kwargs(model_args)
-    return AutoConfig.from_pretrained(model_args.model_name_or_path, **init_kwargs)
+    if not model_args.train_from_scratch:
+        config = AutoConfig.from_pretrained(model_args.model_name_or_path, **init_kwargs)
+    else:
+        dynamic_class=load_modules_and_classes('llamafactory.model',read_model_type_from_checkpoint(model_args.model_name_or_path)+"Config")
+        if dynamic_class is not None:
+            config = dynamic_class.from_pretrained(model_args.model_name_or_path)
+        else:
+            return ValueError("model name {model_args.model_name_or_path} not found")
+    return config
 
 
 def load_model(
