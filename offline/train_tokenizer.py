@@ -1,6 +1,7 @@
 import argparse
 import os
-from transformers import ByteLevelBPETokenizer, PreTrainedTokenizerFast
+from llamafactory.model.way.tokenizer import WayTokenizerFast
+from tokenizers import ByteLevelBPETokenizer
 
 def main(directory_path, vocab_size, min_frequency, save_path):
     tokenizer = ByteLevelBPETokenizer()
@@ -15,7 +16,7 @@ def main(directory_path, vocab_size, min_frequency, save_path):
         "<unk>",
         "<mask>",
     ])
-    tokenizer = PreTrainedTokenizerFast(tokenizer_object=tokenizer)
+    tokenizer = WayTokenizerFast(tokenizer_object=tokenizer)
     tokenizer.save_pretrained(save_path)
 
 if __name__ == "__main__":
