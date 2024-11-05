@@ -2,14 +2,17 @@ import argparse
 import os
 from llamafactory.model.way.tokenizer import WayTokenizerFast
 from tokenizers import ByteLevelBPETokenizer
-
+def read_files_in_stream(file_paths):
+    # 生成器函数，逐行读取文件
+    for file_path in file_paths:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                yield line.strip()
 def main(directory_path, vocab_size, min_frequency, save_path):
     tokenizer = ByteLevelBPETokenizer()
-    
     # 获取目录中的所有 .txt 文件
     files = [os.path.join(directory_path, f) for f in os.listdir(directory_path) if f.endswith('.txt')]
-    
-    tokenizer.train(files=files, vocab_size=vocab_size, min_frequency=min_frequency, special_tokens=[
+    tokenizer.train_new_from_iterator(iterator=read_files_in_stream(files), vocab_size=vocab_size, min_frequency=min_frequency, special_tokens=[
         "<s>",
         "<pad>",
         "</s>",
