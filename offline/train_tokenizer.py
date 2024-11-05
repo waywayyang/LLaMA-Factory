@@ -12,7 +12,7 @@ def main(directory_path, vocab_size, min_frequency, save_path):
     tokenizer = ByteLevelBPETokenizer()
     # 获取目录中的所有 .txt 文件
     files = [os.path.join(directory_path, f) for f in os.listdir(directory_path) if f.endswith('.txt')]
-    tokenizer.train_new_from_iterator(iterator=read_files_in_stream(files), vocab_size=vocab_size, min_frequency=min_frequency, special_tokens=[
+    tokenizer.train_from_iterator(iterator=read_files_in_stream(files), vocab_size=vocab_size, min_frequency=min_frequency, special_tokens=[
         "<s>",
         "<pad>",
         "</s>",
