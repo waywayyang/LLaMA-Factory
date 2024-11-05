@@ -202,6 +202,6 @@
   "model_max_length": 131072,
   "pad_token": "<|endoftext|>",
   "split_special_tokens": false,
-  "tokenizer_class": "Qwen2Tokenizer",
+  "tokenizer_class": "WayTokenizerFast",
   "unk_token": null
 }
