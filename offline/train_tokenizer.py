@@ -16,8 +16,11 @@ def main(directory_path, vocab_size, min_frequency, save_path):
         "<unk>",
         "<mask>",
     ])
+    print("train tokenizer finish")
     tokenizer = WayTokenizerFast(tokenizer_object=tokenizer)
+    print("start save tokenize")
     tokenizer.save_pretrained(save_path)
+    print("end save tokenize")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train a tokenizer and save it.")
