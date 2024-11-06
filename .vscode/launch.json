@@ -5,7 +5,18 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "pretrain debug",
+            "name": "pretrain qwen2-0.5b",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "tests/e2e/test_pretrain.py",
+            "console": "integratedTerminal",
+            "args": [
+                "train",
+                "examples/train_lora/qwen2_0_5_pretrain.yaml"
+            ]
+        },
+        {
+            "name": "pretrain way",
             "type": "debugpy",
             "request": "launch",
             "program": "tests/e2e/test_pretrain.py",
