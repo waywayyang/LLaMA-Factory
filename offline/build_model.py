@@ -1,7 +1,7 @@
 from llamafactory.model.way.configuration import WayConfig
-from llamafactory.model.way.model import WayModel
+from llamafactory.model.way.model import WayModelForCausalLM
 config={
-    "vocab_size": 151643,
+    "vocab_size": 151665,
     "hidden_size": 512,
     "intermediate_size": 512,
     "num_hidden_layers": 16,
@@ -20,6 +20,7 @@ config={
     "max_window_layers": 28,
     "attention_dropout": 0
 }
+
 configuration = WayConfig(**config)
-model = WayModel(configuration)
-model.save_pretrained("/root/LLaMA-Factory/examples/train_pretrain/ckpt")
+model = WayModelForCausalLM(configuration)
+model.save_pretrained("/root/data/models/waymodel")

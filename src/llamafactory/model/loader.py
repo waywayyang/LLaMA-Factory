@@ -108,7 +108,8 @@ def load_tokenizer(model_args: "ModelArguments") -> "TokenizerModule":
         except Exception as e:
             raise OSError("Failed to load tokenizer.") from e
     else:
-        dynamic_class=load_modules_and_classes('llamafactory.model',read_model_type_from_checkpoint(model_args.model_name_or_path)+"TokenizerFast")
+        _,tokenizer_cls,_=read_cls_from_checkpoint(model_args.model_name_or_path)
+        dynamic_class=load_modules_and_classes('llamafactory.model',tokenizer_cls)
         if dynamic_class is not None:
             tokenizer = dynamic_class.from_pretrained(model_args.model_name_or_path)
         else:
@@ -139,16 +140,7 @@ def load_tokenizer(model_args: "ModelArguments") -> "TokenizerModule":
 
     return {"tokenizer": tokenizer, "processor": processor}
 
-def read_model_type_from_checkpoint(checkpoint_path):
-    """
-    从模型的检查点中读取模型类型，并将类型的首字母大写。
-
-    参数:
-    checkpoint_path (str): 模型检查点的路径。
-
-    返回:
-    str: 模型类型的首字母大写。
-    """
+def read_cls_from_checkpoint(checkpoint_path):
     # 确保检查点路径存在
     if not os.path.exists(checkpoint_path):
         raise ValueError(f"Checkpoint path {checkpoint_path} does not exist")
@@ -161,14 +153,10 @@ def read_model_type_from_checkpoint(checkpoint_path):
     # 读取配置文件
     with open(config_file, "r") as file:
         config = json.load(file)
-
-    # 读取模型类型
-    model_type = config.get("model_type", "Unknown")
-
-    # 将模型类型的首字母大写
-    model_type_capitalized = model_type.capitalize()
-
-    return model_type_capitalized
+    config_cls=config['auto_map']['AutoConfig']
+    model_cls=config['auto_map']['AutoModel']
+    tokenizer_cls=config['auto_map']['AutoTokenizer']
+    return config_cls,tokenizer_cls,model_cls
 
 
 
@@ -180,11 +168,12 @@ def load_config(model_args: "ModelArguments") -> "PretrainedConfig":
     if not model_args.train_from_scratch:
         config = AutoConfig.from_pretrained(model_args.model_name_or_path, **init_kwargs)
     else:
-        dynamic_class=load_modules_and_classes('llamafactory.model',read_model_type_from_checkpoint(model_args.model_name_or_path)+"Config")
+        config_cls,_,_=read_cls_from_checkpoint(model_args.model_name_or_path)
+        dynamic_class=load_modules_and_classes('llamafactory.model',config_cls)
         if dynamic_class is not None:
             config = dynamic_class.from_pretrained(model_args.model_name_or_path)
         else:
-            return ValueError("model name {model_args.model_name_or_path} not found")
+            return ValueError("class name {dynamic_class} not found")
     return config
 
 
@@ -220,13 +209,13 @@ def load_model(
         else:
             if type(config) in AutoModelForVision2Seq._model_mapping.keys():  # assume built-in models
                 load_class = AutoModelForVision2Seq
+            elif model_args.train_from_scratch:
+                _,_,model_cls=read_cls_from_checkpoint(model_args.model_name_or_path)
+                load_class = load_modules_and_classes('llamafactory.model',model_cls)
             else:
                 load_class = AutoModelForCausalLM
 
-            if model_args.train_from_scratch:
-                model = load_class.from_config(config, trust_remote_code=True)
-            else:
-                model = load_class.from_pretrained(**init_kwargs)
+            model = load_class.from_pretrained(**init_kwargs)
 
         if model_args.mixture_of_depths == "convert":
             model = convert_pretrained_model_to_mod(model, config, model_args)

@@ -349,7 +349,7 @@ class WayModel(WayPreTrainedModel):
 
         return causal_mask
     
-class Qwen2ForCausalLM(WayPreTrainedModel, GenerationMixin):
+class WayModelForCausalLM(WayPreTrainedModel, GenerationMixin):
     _tied_weights_keys = ["lm_head.weight"]
 
     def __init__(self, config):

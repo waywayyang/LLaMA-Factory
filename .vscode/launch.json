@@ -10,6 +10,10 @@
             "request": "launch",
             "program": "tests/e2e/test_pretrain.py",
             "console": "integratedTerminal",
+            "env": {
+                "CUDA_VISIBLE_DEVICES": "0",
+                "HF_ENDPOINT": "https://hf-mirror.com"
+            },
             "args": [
                 "train",
                 "examples/train_lora/qwen2_0_5_pretrain.yaml"
@@ -21,6 +25,10 @@
             "request": "launch",
             "program": "tests/e2e/test_pretrain.py",
             "console": "integratedTerminal",
+            "env": {
+                "CUDA_VISIBLE_DEVICES": "0",
+                "HF_ENDPOINT": "https://hf-mirror.com"
+            },
             "args": [
                 "train",
                 "examples/train_pretrain/way_pretrain.yaml"
