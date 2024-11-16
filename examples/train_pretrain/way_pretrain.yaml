@@ -1,5 +1,5 @@
 ### model
-model_name_or_path: /root/data/models/waymodel
+model_name_or_path: /home/ubuntu/data/models/waymodel
 
 ### method
 train_from_scratch: true
@@ -11,12 +11,13 @@ finetuning_type: full
 ### dataset
 dataset: wikipedia_zh
 cutoff_len: 512
-max_samples: 10000
+# max_samples: 10000
 overwrite_cache: true
 preprocessing_num_workers: 16
+streaming: true
 
 ### output
-output_dir: /root/data/output/waymodel
+output_dir: /home/ubuntu/data/output/waymodel
 logging_steps: 10
 save_steps: 500
 plot_loss: true
@@ -31,9 +32,10 @@ lr_scheduler_type: cosine
 warmup_ratio: 0.1
 bf16: true
 ddp_timeout: 180000000
+max_steps: 100
 
 ### eval
-val_size: 0.1
-per_device_eval_batch_size: 16
+val_size: 2
+per_device_eval_batch_size: 2
 eval_strategy: steps
-eval_steps: 500
+eval_steps: 50

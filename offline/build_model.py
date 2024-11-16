@@ -23,4 +23,4 @@ config={
 
 configuration = WayConfig(**config)
 model = WayModelForCausalLM(configuration)
-model.save_pretrained("/root/data/models/waymodel")
+model.save_pretrained("/home/ubuntu/data/models/waymodel")
